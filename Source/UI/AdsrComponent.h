@@ -32,7 +32,7 @@ private:
     juce::Slider sustainSlider;
     juce::Slider releaseSlider;
     
-    juce::String adsrName;
+    juce::String adsrName {""};
     
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     

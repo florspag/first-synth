@@ -148,39 +148,43 @@ void FirstSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
-    for (int i=0; i<synth.getNumVoices();++i)
+    // update voice
     {
-        if (auto voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
+        for (int i=0; i<synth.getNumVoices();++i)
         {
-            
-            // FM OSC
-            auto& oscWaveChoice= *apvts.getRawParameterValue("Osc1WaveType");
-            auto& fmDepth= *apvts.getRawParameterValue("Osc1FMDepth");
-            auto& fmFreq= *apvts.getRawParameterValue("Osc1FMFreq");
-            
-            // Amplification ADSR
-            auto& attack = *apvts.getRawParameterValue("ATTACK");
-            auto& decay = *apvts.getRawParameterValue("DECAY");
-            auto& sustain = *apvts.getRawParameterValue("SUSTAIN");
-            auto& release = *apvts.getRawParameterValue("RELEASE");
-            
-            // Filter
-            auto& filterType = *apvts.getRawParameterValue("FilterType");
-            auto& filterCutOff = *apvts.getRawParameterValue("FilterCutOff");
-            auto& filterRes = *apvts.getRawParameterValue("FilterRes");
-            
-            // Modulator ADSR
-            auto& modAttack = *apvts.getRawParameterValue("MODAttack");
-            auto& modDecay = *apvts.getRawParameterValue("MODDecay");
-            auto& modSustain = *apvts.getRawParameterValue("MODSustain");
-            auto& modRelease = *apvts.getRawParameterValue("MODRelease");
-
-            voice->getOscillator().setOscWaveType(oscWaveChoice);
-            voice->getOscillator().setFMParams(fmDepth.load(), fmFreq.load());
-            // atomic are heavier than regular float => load() value is atomic
-            voice->updateAdsr(attack.load(), decay.load(), sustain.load(), release.load());
-            voice->updateFilter(filterType.load(), filterCutOff.load(), filterRes.load());
-            voice->updateModAdsr(modAttack.load(), modDecay.load(), modSustain.load(), modRelease.load());
+            if (auto voice = dynamic_cast<SynthVoice*>(synth.getVoice(i)))
+            {
+                
+                // FM OSC
+                auto& oscWaveChoice= *apvts.getRawParameterValue("Osc1WaveType");
+                auto& fmDepth= *apvts.getRawParameterValue("Osc1FMDepth");
+                auto& fmFreq= *apvts.getRawParameterValue("Osc1FMFreq");
+                
+                // Amplification ADSR
+                auto& attack = *apvts.getRawParameterValue("ATTACK");
+                auto& decay = *apvts.getRawParameterValue("DECAY");
+                auto& sustain = *apvts.getRawParameterValue("SUSTAIN");
+                auto& release = *apvts.getRawParameterValue("RELEASE");
+                
+                // Filter
+                auto& filterType = *apvts.getRawParameterValue("FilterType");
+                auto& filterCutOff = *apvts.getRawParameterValue("FilterCutOff");
+                auto& filterRes = *apvts.getRawParameterValue("FilterRes");
+                
+                // Modulator ADSR
+                auto& modAttack = *apvts.getRawParameterValue("MODAttack");
+                auto& modDecay = *apvts.getRawParameterValue("MODDecay");
+                auto& modSustain = *apvts.getRawParameterValue("MODSustain");
+                auto& modRelease = *apvts.getRawParameterValue("MODRelease");
+                
+                voice->getOscillator().setOscWaveType(oscWaveChoice);
+                voice->getOscillator().setFMParams(fmDepth, fmFreq);
+                // atomic are heavier than regular float => load() value is atomic
+                voice->getAdsr().updateADSR(attack.load(), decay.load(), sustain.load(), release.load());
+                voice->getModAdsr().updateADSR(modAttack.load(), modDecay.load(), modSustain.load(), modRelease.load());
+                voice->updateFilter(filterType, filterCutOff, filterRes);
+                
+            }
         }
     }
 
@@ -230,7 +234,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout FirstSynthAudioProcessor::cr
     
     // FM
     // freq
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "Osc1WaveType", 8 }, "Osc 1 Wave type", juce::StringArray("Sine", "Saw", "Square"), 0, ""));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "Osc1WaveType", 16 }, "Osc 1 Wave type", juce::StringArray("Sine", "Saw", "Square"), 0, ""));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "Osc1FMFreq", 2 },"FM Frequency", juce::NormalisableRange<float>{0.0f, 1000.0f, 0.01f, 0.3f}, 0.0f));
     // depth
     params.push_back(std::make_unique<juce::AudioParameterFloat>( juce::ParameterID { "Osc1FMDepth", 3 },"FM Depth", juce::NormalisableRange<float>{0.0f, 1000.0f, 0.01f, 0.3f }, 0.0f));
@@ -247,23 +251,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout FirstSynthAudioProcessor::cr
     params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "RELEASE", 7 }, "Release", juce::NormalisableRange<float>{0.1f, 3.0f, 0.1f}, 0.4f));
     
     // Filter MOD
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODAttack", 4 },"Mod Attack" , juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 0.1f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODAttack", 8 },"Mod Attack" , juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 0.1f));
     // decay
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODDecay", 5 },"Mod Decay" , juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 0.1f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODDecay", 9 },"Mod Decay" , juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 0.1f));
     // sustain
-    params.push_back(std::make_unique<juce::AudioParameterFloat>( juce::ParameterID { "MODSustain", 6 },"Mod Sustain", juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>( juce::ParameterID { "MODSustain", 10 },"Mod Sustain", juce::NormalisableRange<float>{0.1f, 1.0f, 0.1f}, 1.0f));
     // release
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODRelease", 7 }, "Mod Release", juce::NormalisableRange<float>{0.1f, 3.0f, 0.1f}, 0.4f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "MODRelease",11 }, "Mod Release", juce::NormalisableRange<float>{0.1f, 3.0f, 0.1f}, 0.4f));
     
 
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "GAIN", 9 },"Gain" ,0.0f, 1.0f, 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "GAIN", 12 },"Gain" ,0.0f, 1.0f, 0.5f));
     
     // Filter
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "FilterType",  10 }, juce::String("Filter type"), juce::StringArray{"Low-Pass", "Band-Pass", "High-Pass"}, 0));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "FilterType",  13 }, juce::String("Filter type"), juce::StringArray{"Low-Pass", "Band-Pass", "High-Pass"}, 0));
     // cut off (skewed)
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "FilterCutOff", 4 },"Filter cutoff" , juce::NormalisableRange<float>{20.0f, 20000.0f, 0.1f, 0.6f}, 200.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "FilterRes", 4 },"Filter resonance" , juce::NormalisableRange<float>{1.0f, 10.0f, 0.1f}, 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "FilterCutOff", 14 },"Filter cutoff" , juce::NormalisableRange<float>{20.0f, 20000.0f, 0.1f, 0.6f}, 200.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "FilterRes", 15 },"Filter resonance" , juce::NormalisableRange<float>{1.0f, 10.0f, 0.1f}, 1.0f));
     
     
     return {params.begin(), params.end()};

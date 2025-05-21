@@ -36,8 +36,8 @@ void OscData::setOscWaveType(const int choice){
 }
 
 void OscData::getNextAudioBlock(juce::dsp::AudioBlock<float>& audioBlock){
-    for (int ch=0; ch<audioBlock.getNumChannels(); ch++){
-        for (int sample=0; sample<audioBlock.getNumSamples(); sample++){
+    for (int ch=0; ch<audioBlock.getNumChannels(); ++ch){
+        for (int sample=0; sample<audioBlock.getNumSamples(); ++sample){
             fmMod = fmOsc.processSample(audioBlock.getSample(ch, sample)) * fmDepth;
         }
     }

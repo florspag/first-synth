@@ -40,8 +40,8 @@ void SynthVoice::renderNextBlock (juce::AudioBuffer< float > &outputBuffer, int 
         return;
     }
     
-    synthBuffer.setSize(outputBuffer.getNumSamples(), numSamples,false, false, true);
-    modAdsr.applyEnvelopeToBuffer(synthBuffer, 0, numSamples);
+    synthBuffer.setSize(outputBuffer.getNumChannels(), numSamples,false, false, true);
+    modAdsr.applyEnvelopeToBuffer(outputBuffer, 0, numSamples);
     synthBuffer.clear();
     
     juce::dsp::AudioBlock<float> audioBlock{synthBuffer}; // just an alias
@@ -74,18 +74,15 @@ void SynthVoice::prepareToPlay (double sampleRate, int samplesPerBlock, int outp
 
     osc.prepareToPlay(spec);
     
-    adsr.setSampleRate(sampleRate);
-    filter.prepareToPlay (sampleRate, samplesPerBlock, outputChannels);
     modAdsr.setSampleRate(sampleRate);
+    filter.prepareToPlay (sampleRate, samplesPerBlock, outputChannels);
+    adsr.setSampleRate(sampleRate);
     gain.prepare(spec);
     gain.setGainLinear(0.3f);
     
     isPrepared = true;
 }
 
-void SynthVoice::updateAdsr(const float attack, const  float decay,const  float sustain,const  float release){
-    adsr.updateADSR(attack, decay, sustain, release);
-}
 
 
 void SynthVoice::updateFilter(const int filterType, const float frequency, const float resonance)
@@ -94,7 +91,4 @@ void SynthVoice::updateFilter(const int filterType, const float frequency, const
     filter.updateParameters ( filterType, frequency, resonance, modulator);
 }
 
-void SynthVoice::updateModAdsr(const float attack, const  float decay,const  float sustain,const  float release){
-    modAdsr.updateADSR(attack, decay, sustain, release);
-}
 

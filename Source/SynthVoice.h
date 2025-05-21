@@ -27,18 +27,19 @@ public:
     void renderNextBlock (juce::AudioBuffer< float > &outputBuffer, int startSample, int numSamples) override;
     void pitchWheelMoved (int newPitchWheelValue) override;
     void prepareToPlay (double sampleRate, int samplesPerBlock, int outputChannels);
-    
-    void updateAdsr(const  float attack, const  float decay,const  float sustain,const  float release);
+
     void updateFilter(const int filterType, const float frequency, const float resonance);
-    void updateModAdsr(const  float attack, const  float decay,const  float sustain,const  float release);
+   
     OscData& getOscillator(){return osc;};
+    AdsrData& getAdsr(){return adsr;};
+    AdsrData& getModAdsr(){return modAdsr;};
 private:
     juce::AudioBuffer<float> synthBuffer;
     
     OscData osc;
     AdsrData adsr;
-    FilterData filter;
     AdsrData modAdsr;
+    FilterData filter;
     juce::dsp::Gain<float> gain;
     
     bool isPrepared {false};

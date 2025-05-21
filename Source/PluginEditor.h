@@ -34,9 +34,6 @@ private:
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<SliderAttachment> gainSliderAttachement;
     
-    //juce::ComboBox oscSelector;
-    //std::unique_ptr< juce::AudioProcessorValueTreeState::ComboBoxAttachment> oscSelAttachment;
-    
     FirstSynthAudioProcessor& audioProcessor;
     OscComponent osc;
     AdsrComponent adsr;
